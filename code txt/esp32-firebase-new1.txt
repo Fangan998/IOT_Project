@@ -1,0 +1,46 @@
+
+//Include WiFi.h
+#include <WiFi.h>
+
+//Include Firebase ESP32 library (this library)
+#include <FirebaseESP32.h>
+
+//Define the Firebase Data object
+FirebaseData fbdo;
+
+// Define the FirebaseAuth data for authentication data
+FirebaseAuth auth;
+
+// Define the FirebaseConfig data for config data
+FirebaseConfig config;
+
+// Assign the project host and api key (required)
+config.host = FIREBASE_HOST;
+
+config.api_key = API_KEY;
+
+// Assign the user sign in credentials
+auth.user.email = USER_EMAIL;
+
+auth.user.password = USER_PASSWORD;
+
+//Initialize the library with the Firebase authen and config.
+Firebase.begin(&config, &auth);
+
+//Optional, set AP reconnection in setup()
+Firebase.reconnectWiFi(true);
+
+//Optional, set number of error retry
+Firebase.setMaxRetry(fbdo, 3);
+
+//Optional, set number of error resumable queues
+Firebase.setMaxErrorQueue(fbdo, 30);
+
+//Optional, use classic HTTP GET and POST requests. 
+//This option allows get and delete functions (PUT and DELETE HTTP requests) works for 
+//device connected behind the Firewall that allows only GET and POST requests.   
+Firebase.enableClassicRequest(fbdo, true);
+
+//Optional, set the size of HTTP response buffer
+//Prevent out of memory for large payload but data may be truncated and can't determine its type.
+fbdo.setResponseSize(8192); //minimum size is 4096 bytes
