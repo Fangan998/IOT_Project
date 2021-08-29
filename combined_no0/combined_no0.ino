@@ -15,6 +15,10 @@
 #define WIFI_SSID "320-39"
 #define WIFI_PASSWORD "0963197535"
 
+const char *ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 8*3600;
+const int daylightOffset_sec = 0;
+
 BLEScan* pBLEScan;
 BLEBeacon id;
 int scanTime = 10; //In seconds
@@ -50,7 +54,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
       Serial.print(",RSSI :");
       const int bRSSI = advertisedDevice.getRSSI();
       Serial.print(bRSSI);
-      Firebase.setInt(firebaseData, "/esp32 no_0 /RSSI", bRSSI);    //Send a integer to the database(傳數字給firebase的即時數據庫)
+      Firebase.setInt(firebaseData, "/esp32 no_0/" + bUUID + "/RSSI", bRSSI);    //Send a integer to the database(傳數字給firebase的即時數據庫)
 
       //Print Major
       Serial.print(",Major :");
@@ -72,7 +76,25 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
       }else{
       float M = pow(10,((abs(bRSSI) - A) / (10 * n)));
       Serial.println(M);
-      Firebase.setFloat(firebaseData, "/esp32 no_0 /distance", M);    //Send a Float to the database(傳數字給firebase的即時數據庫)
+
+      //https://blog.csdn.net/Naisu_kun/article/details/115627629
+      /*
+      struct tm timeinfo;
+      if(!getLocalTime(&timeinfo))
+      {
+        Serial.println("Failed to obtain time");
+        return;
+      }
+      Serial.println(&timeinfo,"%F %T %A");//格式化輸出
+      String Time = timeinfo;
+      */
+      //抓取現在時間，並將它上傳(unix時間)
+      time_t now; 
+      time(&now);
+      Firebase.setInt(firebaseData, "/esp32 no_0/" + bUUID + "/time" , now);
+      
+      //Firebase.setFloat(firebaseData, "/esp32 no_0 /distance", M);    //Send a Float to the database(傳數字給firebase的即時數據庫)
+      Firebase.setFloat(firebaseData, "/esp32 no_0/" + bUUID + "/distance" , M); //利用string變數使得可以同時讓firebase存不同的UUID
       }
       
       //如果找到的UUID相同，且RSSI大於-50時，亮燈
@@ -107,7 +129,7 @@ void setup() {
     Serial.print(".");
     delay(300);
     count++; //還未連上就使count加1
-    if(count > 33){
+    if(count > 33){//如果count大於33(約10秒)
       WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
       count = 0;
     }
@@ -116,6 +138,8 @@ void setup() {
   Serial.print("Connected with IP: ");
   Serial.println(WiFi.localIP());
   Serial.println();
+
+  configTime(gmtOffset_sec,daylightOffset_sec,ntpServer);
 
   Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
   Firebase.reconnectWiFi(true);
