@@ -28,7 +28,6 @@ String reverse(String str) {
     rev = rev + str[i];
   } 
   return rev;
-
 }
 
 //Define FirebaseESP32 data object
@@ -60,24 +59,24 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
       Serial.print(",Major :");
       int bMajor = id.getMajor() / 256;
       Serial.print(bMajor);
+      Firebase.setInt(firebaseData, "/esp32 no_0/" + bUUID + "/major" , bMajor);
 
       //Print Minor
       Serial.print(",Minor :");
       int bMinor = id.getMinor() / 256;
       Serial.print(bMinor);
+      Firebase.setInt(firebaseData, "/esp32 no_0/" + bUUID + "/minor" , bMinor);
       Serial.println("");
 
+      //以下A是1m時的RSSI強度，n為環境衰減，使用前須先較準
       float A = 59.00;
-      float n = 2.00;
+      float n = 3.60;
 
-      //基本上rssi < -80 時，就有一段距離或是未啟動
-      if(bRSSI <= -80){
-        Serial.println("裝置可能未啟動或過遠");
-      }else{
+      //pow，傳回x的y次方
       float M = pow(10,((abs(bRSSI) - A) / (10 * n)));
       Serial.println(M);
 
-      //https://blog.csdn.net/Naisu_kun/article/details/115627629
+      //https://blog.csdn.net/Naisu_kun/article/details/115627629(網路時間)
       /*
       struct tm timeinfo;
       if(!getLocalTime(&timeinfo))
@@ -96,15 +95,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
       //Firebase.setFloat(firebaseData, "/esp32 no_0 /distance", M);    //Send a Float to the database(傳數字給firebase的即時數據庫)
       Firebase.setFloat(firebaseData, "/esp32 no_0/" + bUUID + "/distance" , M); //利用string變數使得可以同時讓firebase存不同的UUID
       }
-      
-      //如果找到的UUID相同，且RSSI大於-50時，亮燈
-      if ( bUUID == "00999999-9999-5555-5555-551111111111" && bRSSI >= -50) {
-        digitalWrite(2, HIGH);
-      } else {
-        digitalWrite(2, LOW);
-      }
-
-    }
+    
 };
 
 
